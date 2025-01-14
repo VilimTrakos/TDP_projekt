@@ -1,0 +1,6 @@
+[
+  ["John", "Cena", "123456789", "23.04.1980", "M", "john@example.com"],
+  ["Jane", "Doe", "987654321", "15.09.1990", "F", "jane@example.com"],
+  ["Paul", "Smith", "456123789", "05.12.1985", "M", "paul@example.com"],
+  ["Anna", "Taylor", "321654987", "19.07.1992", "F", "anna@example.com"]
+]

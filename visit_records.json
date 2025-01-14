@@ -1,0 +1,86 @@
+[
+    {
+        "OIB": "123456789",
+        "Date": "25.05.2024",
+        "Diagnosis": "Common Cold",
+        "Medicine": "Paracetamol",
+        "Follow-up Date": "25.06.2024"
+    },
+    {
+        "OIB": "987654321",
+        "Date": "20.01.2024",
+        "Diagnosis": "Influenza",
+        "Medicine": "Ibuprofen",
+        "Follow-up Date": "20.02.2024"
+    },
+    {
+        "OIB": "456123789",
+        "Date": "12.12.2023",
+        "Diagnosis": "Allergy",
+        "Medicine": "Antihistamine",
+        "Follow-up Date": "12.01.2024"
+    },
+    {
+        "OIB": "321654987",
+        "Date": "30.06.2024",
+        "Diagnosis": "Back Pain",
+        "Medicine": "Ibuprofen",
+        "Follow-up Date": "30.07.2024"
+    },
+    {
+        "OIB": "456123789",
+        "Date": "14.01.2025",
+        "Diagnosis": "gteg",
+        "Medicine": "gege",
+        "Follow-up Date": "29.01.2025"
+    },
+    {
+        "OIB": "987654321",
+        "Date": "14.01.2025",
+        "Diagnosis": "fsd",
+        "Medicine": "fsd",
+        "Follow-up Date": "29.01.2025"
+    },
+    {
+        "OIB": "123456789",
+        "Date": "14.01.2025",
+        "Diagnosis": "gvsdfgv",
+        "Medicine": "vdfvbdf",
+        "Follow-up Date": "30.01.2025"
+    },
+    {
+        "OIB": "456123789",
+        "Date": "14.01.2025",
+        "Diagnosis": "vsd",
+        "Medicine": "vs",
+        "Follow-up Date": "29.01.2025"
+    },
+    {
+        "OIB": "987654321",
+        "Date": "14.01.2025",
+        "Diagnosis": "3252",
+        "Medicine": "42342",
+        "Follow-up Date": "29.01.2025"
+    },
+    {
+        "OIB": "123456789",
+        "Date": "14.01.2025",
+        "Diagnosis": "432",
+        "Medicine": "432",
+        "Follow-up Date": "23.01.2025"
+    },
+    {
+        "OIB": "456123789",
+        "Date": "14.01.2025",
+        "Diagnosis": "fgshdngfmhg",
+        "Medicine": "bfdgnfhg",
+        "Follow-up Date": "22.01.2025"
+    },
+    {
+        "OIB": "321654987",
+        "Date": "14.01.2025",
+        "Diagnosis": "432423",
+        "Medicine": "423423",
+        "Follow-up Date": "23.01.2025"
+    }
+]

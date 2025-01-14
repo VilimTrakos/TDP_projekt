@@ -1,23 +1,29 @@
 import tkinter as tk
 from tkinter import messagebox
-import subprocess
+from utils import launch_script
+import sys
+
+VALID_CREDENTIALS = {
+    "john_doe": "password123",
+    "jane_smith": "securepass",
+    "":""
+}
 
 def check_login():
     username = username_entry.get()
     password = password_entry.get()
     selected_region = region_var.get()
     
-    if username == "" and password == "": 
+    if username in VALID_CREDENTIALS and VALID_CREDENTIALS[username] == password:
         login_window.destroy()
-        subprocess.Popen(["python", "app.py", username, selected_region])
-        app_window.attributes('-topmost', True) 
+        launch_script("app.py", username, selected_region)
     else:
         messagebox.showerror("Login Error", "Invalid username or password")
+        password_entry.delete(0, tk.END)
 
 login_window = tk.Tk()
 login_window.title("Login")
 login_window.geometry("300x250")
-
 
 tk.Label(login_window, text="Username:").pack(pady=5)
 username_entry = tk.Entry(login_window)
