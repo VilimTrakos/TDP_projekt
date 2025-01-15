@@ -35,3 +35,31 @@ def load_data(role, related_id):
             patient_data.append((name, surname, oib, dob, gender, contact))
 
     return patient_data
+
+def load_patient_doc(oib):
+    db = connect_to_couchdb()
+    if not db:
+        return None
+
+    for doc_id in db:
+        doc = db[doc_id]
+        if doc.get("type") == "patient" and doc.get("oib") == oib:
+            return doc
+    return None
+
+def load_visit_records(oib):
+    db = connect_to_couchdb()
+    if not db:
+        return []
+    
+    visits = []
+    for doc_id in db:
+        doc = db[doc_id]
+        if doc.get("type") == "visit" and doc.get("OIB") == oib:
+            visits.append(doc)
+    return visits
+
+def save_visit_record(visit):
+    db = connect_to_couchdb()
+    if not db:
+        return

@@ -4,7 +4,8 @@ from tkcalendar import Calendar
 from datetime import datetime
 import sys
 import os
-from data_handler import load_visit_records, save_visit_record
+
+from data_handler import load_patient_doc, load_visit_records, save_visit_record
 
 def add_new_record(oib):
     def submit_record():
@@ -139,16 +140,30 @@ def open_general_info(record):
     app_window = tk.Tk()
     app_window.title("Record Details")
     
+    current_oib = record[2]  
+
+    patient_doc = load_patient_doc(current_oib)
+    
+    if patient_doc:
+        name = patient_doc.get("first_name", "")
+        surname = patient_doc.get("last_name", "")
+        dob = patient_doc.get("date_of_birth", "")
+        gender = patient_doc.get("gender", "")
+        contact = patient_doc.get("email", "") 
+    else:
+        name, surname, _, dob, gender, contact = record
+    
     general_info_frame = tk.Frame(app_window)
     general_info_frame.pack(side="left", padx=10, pady=10)
     
     tk.Label(general_info_frame, text="General Info", font=("Arial", 14, "bold")).pack()
-    info_labels = ["Name:", "Surname:", "OIB:", "Date of Birth:", "Gender:", "Contact:"]
-    for i, value in enumerate(record):
-        tk.Label(general_info_frame, text=f"{info_labels[i]} {value}").pack(anchor="w")
+    tk.Label(general_info_frame, text=f"Name: {name}").pack(anchor="w")
+    tk.Label(general_info_frame, text=f"Surname: {surname}").pack(anchor="w")
+    tk.Label(general_info_frame, text=f"OIB: {current_oib}").pack(anchor="w")
+    tk.Label(general_info_frame, text=f"Date of Birth: {dob}").pack(anchor="w")
+    tk.Label(general_info_frame, text=f"Gender: {gender}").pack(anchor="w")
+    tk.Label(general_info_frame, text=f"Contact: {contact}").pack(anchor="w")
     
-    current_oib = record[2]  
-
     visit_frame = tk.Frame(app_window)
     visit_frame.pack(side="right", padx=10, pady=10)
     
@@ -182,7 +197,11 @@ def view_selected_record(oib):
         "Date": values[0],
         "Diagnosis": values[1],
         "Medicine": values[2],
-        "Follow-up Date": next((visit["Follow-up Date"] for visit in load_visit_records(oib) if visit["Date"] == values[0] and visit["Diagnosis"] == values[1] and visit["Medicine"] == values[2]), "")
+        "Follow-up Date": next(
+            (visit["Follow-up Date"] for visit in load_visit_records(oib)
+             if visit["Date"] == values[0] and visit["Diagnosis"] == values[1] and visit["Medicine"] == values[2]),
+            ""
+        )
     }
     view_record(oib, record)
 
