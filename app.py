@@ -36,17 +36,19 @@ def sort_table(col):
         tree.move(k, "", index)
     tree.heading(col, command=lambda: sort_table(col))
 
-if len(sys.argv) < 3:
-    messagebox.showerror("Error", "Username and region must be provided.")
+if len(sys.argv) < 5:
+    messagebox.showerror("Error", "Username, role, related_id, and region must be provided.")
     sys.exit(1)
 
 username = sys.argv[1]
-region = sys.argv[2]
+role = sys.argv[2]
+related_id = sys.argv[3]
+region = sys.argv[4]
 
 app_window = tk.Tk()
 app_window.title("Data Viewer")
 
-tk.Label(app_window, text=f"Username: {username} | Region: {region}").pack(pady=5)
+tk.Label(app_window, text=f"Username: {username} | Role: {role} | Region: {region}").pack(pady=5)
 
 search_var = tk.StringVar()
 tk.Label(app_window, text="Search:").pack(pady=5)
@@ -61,7 +63,7 @@ for col in columns:
     tree.column(col, minwidth=0, width=100, stretch=True)
 tree.pack(pady=5, fill="both", expand=True)
 
-data = load_data()
+data = load_data(role, related_id)
 for record in data:
     tree.insert("", "end", values=record)
 

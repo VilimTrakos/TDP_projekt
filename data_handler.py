@@ -1,40 +1,37 @@
-import json
-import os
+import couchdb
 
-DATA_FILE = "data.json"
-VISIT_DATA_FILE = "visit_records.json"
+def connect_to_couchdb():
+    try:
+        couch = couchdb.Server('http://admin:admin@localhost:5984/')
+        db = couch['medical_records']
+        return db
+    except Exception as e:
+        print(f"Error connecting to CouchDB: {e}")
+        return None
 
-def load_data():
-    if not os.path.exists(DATA_FILE):
+def load_data(role, related_id):
+    db = connect_to_couchdb()
+    if not db:
         return []
-    with open(DATA_FILE, "r") as file:
-        try:
-            return json.load(file)
-        except json.JSONDecodeError:
-            return []
 
-def save_data(records):
-    with open(DATA_FILE, "w") as file:
-        json.dump(records, file, indent=4)
-
-def load_visit_records(oib):
-    if not os.path.exists(VISIT_DATA_FILE):
+    user_doc = db.get(related_id)
+    if not user_doc:
+        print("No user document found with related_id:", related_id)
         return []
-    with open(VISIT_DATA_FILE, "r") as file:
-        try:
-            all_visits = json.load(file)
-            return [visit for visit in all_visits if visit["OIB"] == oib]
-        except json.JSONDecodeError:
-            return []
 
-def save_visit_record(new_visit):
-    visits = []
-    if os.path.exists(VISIT_DATA_FILE):
-        with open(VISIT_DATA_FILE, "r") as file:
-            try:
-                visits = json.load(file)
-            except json.JSONDecodeError:
-                visits = []
-    visits.append(new_visit)
-    with open(VISIT_DATA_FILE, "w") as file:
-        json.dump(visits, file, indent=4)
+    assigned_patients = user_doc.get("patients", [])
+
+    patient_data = []
+    for pid in assigned_patients:
+        patient_doc = db.get(pid)
+        if patient_doc and patient_doc.get("type") == "patient":
+            name = patient_doc.get("first_name", "")
+            surname = patient_doc.get("last_name", "")
+            oib = patient_doc.get("oib", "")
+            dob = patient_doc.get("date_of_birth", "")
+            gender = patient_doc.get("gender", "")
+            contact = patient_doc.get("email", "") 
+
+            patient_data.append((name, surname, oib, dob, gender, contact))
+
+    return patient_data
