@@ -12,14 +12,14 @@ def open_details_window():
         return
     
     record = tree.item(selected_item, "values")
-    record_str = ";".join(record)
-    launch_script("general_info.py", record_str, role)
+    patient_id = record[0]
+    launch_script("general_info.py", patient_id, role)
 
 def search_table(event=None):
     query = search_var.get().lower()
     for row in tree.get_children():
         values = tree.item(row, "values")
-        if any(query in str(value).lower() for value in values):
+        if any(query in str(value).lower() for value in values[1:]):
             tree.item(row, tags="match")
         else:
             tree.item(row, tags="nomatch")
@@ -56,18 +56,23 @@ search_entry = tk.Entry(app_window, textvariable=search_var)
 search_entry.pack(pady=5)
 search_entry.bind("<KeyRelease>", search_table)
 
-columns = ("Name", "Surname", "OIB", "Date of Birth", "Gender", "Contact")
+columns = ("patient_id", "Name", "Surname", "OIB", "Date of Birth", "Gender", "Contact")
 tree = ttk.Treeview(app_window, columns=columns, show="headings")
-for col in columns:
+
+tree.heading("patient_id", text="ID")
+tree.column("patient_id", width=0, stretch=False) 
+
+for col in columns[1:]:
     tree.heading(col, text=col, command=lambda c=col: sort_table(c))
     tree.column(col, minwidth=0, width=100, stretch=True)
+
 tree.pack(pady=5, fill="both", expand=True)
 
 data = load_data(role, related_id)
 for record in data:
     tree.insert("", "end", values=record)
 
-sort_states = {col: False for col in columns}
+sort_states = {col: False for col in columns[1:]}
 
 tk.Button(app_window, text="View Details", command=open_details_window).pack(pady=10)
 

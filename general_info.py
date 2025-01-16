@@ -1,6 +1,5 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from tkcalendar import Calendar
 from datetime import datetime
 import sys
 import os
@@ -16,7 +15,7 @@ def refresh_visit_tree(patient_id, role):
     try:
         sorted_visit_data = sorted(
             visit_data,
-            key=lambda x: datetime.strptime(x["visit_date"], "%d.%m.%Y"),
+            key=lambda x: datetime.strptime(x["visit_date"], "%Y-%m-%d"),
             reverse=True 
         )
     except KeyError as e:
@@ -44,7 +43,7 @@ def sort_visit_tree(column):
         try:
             items_sorted = sorted(
                 items,
-                key=lambda x: datetime.strptime(visit_tree.set(x, column), "%d.%m.%Y"),
+                key=lambda x: datetime.strptime(visit_tree.set(x, column), "%Y-%m-%d"),
                 reverse=reverse
             )
         except ValueError as e:
@@ -96,15 +95,13 @@ def open_new_record(patient_id):
     else:
         messagebox.showerror("Error", "No valid patient_id to link this new record.")
 
-def open_general_info(record, role):
+def open_general_info(patient_id, role):
     global visit_tree, app_window
 
     app_window = tk.Tk()
     app_window.title("Record Details")
 
-    oib_from_tuple = record[2]
-
-    patient_doc = load_patient_doc(oib_from_tuple, role)
+    patient_doc = load_patient_doc(patient_id, role)
 
     if patient_doc:
         name = patient_doc.get("first_name", "")
@@ -112,10 +109,10 @@ def open_general_info(record, role):
         dob = patient_doc.get("date_of_birth", "")
         gender = patient_doc.get("gender", "")
         contact = patient_doc.get("email", "")
-        patient_id = patient_doc["_id"]
     else:
-        name, surname, _, dob, gender, contact = record
-        patient_id = None
+        messagebox.showerror("Error", "Patient document not found.")
+        app_window.destroy()
+        return
 
     general_info_frame = tk.Frame(app_window)
     general_info_frame.pack(side="left", padx=10, pady=10)
@@ -123,7 +120,7 @@ def open_general_info(record, role):
     tk.Label(general_info_frame, text="General Info", font=("Arial", 14, "bold")).pack()
     tk.Label(general_info_frame, text=f"Name: {name}").pack(anchor="w")
     tk.Label(general_info_frame, text=f"Surname: {surname}").pack(anchor="w")
-    tk.Label(general_info_frame, text=f"OIB: {oib_from_tuple}").pack(anchor="w")
+    tk.Label(general_info_frame, text=f"OIB: {patient_doc.get('oib', '')}").pack(anchor="w")
     tk.Label(general_info_frame, text=f"Date of Birth: {dob}").pack(anchor="w")
     tk.Label(general_info_frame, text=f"Gender: {gender}").pack(anchor="w")
     tk.Label(general_info_frame, text=f"Contact: {contact}").pack(anchor="w")
@@ -133,9 +130,9 @@ def open_general_info(record, role):
 
     tk.Label(visit_frame, text="Visit Records", font=("Arial", 14, "bold")).pack()
 
-    if role == 'doctor':
+    if role.lower() == 'doctor':
         visit_columns = ("Date", "Diagnosis", "Medicine")
-    elif role == 'staff':
+    elif role.lower() == 'staff':
         visit_columns = ("Date",)
     else:
         visit_columns = ("Date",)
@@ -151,10 +148,9 @@ def open_general_info(record, role):
 
     visit_tree.pack(pady=5, fill="both", expand=True)
 
-    if patient_id:
+    if role.lower() == 'doctor':
         refresh_visit_tree(patient_id, role)
 
-    if patient_id and role == 'doctor':
         tk.Button(
             visit_frame, 
             text="Add New Record", 
@@ -169,7 +165,7 @@ def open_general_info(record, role):
     else:
         tk.Label(
             visit_frame, 
-            text="No valid patient_id found or insufficient permissions to add/view visits."
+            text="Insufficient permissions to add/view visits."
         ).pack(pady=5)
 
     app_window.mainloop()
@@ -180,11 +176,17 @@ def view_selected_record(patient_id):
         messagebox.showwarning("No Selection", "Please select a visit record to view.")
         return
     values = visit_tree.item(selected_item, "values")
+    if len(values) < 1:
+        messagebox.showerror("Error", "Selected visit record is incomplete.")
+        return
+    visit_date = values[0]
+    diagnosis = values[1] if len(values) > 1 else ""
+    medicine = values[2] if len(values) > 2 else ""
     matching_visits = [
         visit for visit in load_visit_records(patient_id, role)
-        if visit.get("visit_date") == values[0] and
-           visit.get("diagnosis") == values[1] and
-           visit.get("medicine") == values[2]
+        if visit.get("visit_date") == visit_date and
+           (visit.get("diagnosis") == diagnosis if diagnosis else True) and
+           (visit.get("medicine") == medicine if medicine else True)
     ]
     if matching_visits:
         record = matching_visits[0]
@@ -194,15 +196,11 @@ def view_selected_record(patient_id):
 
 def main():
     if len(sys.argv) > 2:
-        record_str = sys.argv[1]
+        patient_id = sys.argv[1]
         role = sys.argv[2].lower()
-        record = record_str.split(";")
-        if len(record) == 6:
-            open_general_info(record, role)
-        else:
-            messagebox.showerror("Error", "Invalid record data provided.")
+        open_general_info(patient_id, role)
     else:
-        messagebox.showerror("Error", "Record data and role must be provided.")
+        messagebox.showerror("Error", "Patient ID and role must be provided.")
         sys.exit(1)
 
 if __name__ == "__main__":
