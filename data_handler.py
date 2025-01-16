@@ -2,6 +2,7 @@ import couchdb
 import os
 from cryptography.fernet import Fernet, InvalidToken
 from tkinter import messagebox
+import uuid
 
 def connect_to_couchdb():
     try:
@@ -127,7 +128,7 @@ def load_patient_doc(patient_id, role):
         if role.lower() == 'doctor':
             decrypted_first_name = decrypt_field(patient_doc.get("first_name", ""), fernet_shared)
             decrypted_last_name = decrypt_field(patient_doc.get("last_name", ""), fernet_shared)
-            decrypted_oib = decrypt_field(patient_doc.get("oib", ""), fernet_doctor)
+            decrypted_oib = decrypt_field(patient_doc.get("oib", ""), fernet_shared)  # Use fernet_shared for OIB
             decrypted_dob = decrypt_field(patient_doc.get("date_of_birth", ""), fernet_doctor)
             decrypted_email = decrypt_field(patient_doc.get("email", ""), fernet_doctor)
             decrypted_doc = {
@@ -218,3 +219,38 @@ def load_visit_records(patient_id, role):
         messagebox.showerror("Error", f"Failed to load visit records: {e}")
         return []
     return visit_records
+
+def save_visit_record(visit_data):
+    db = connect_to_couchdb()
+    if not db:
+        return
+    encryption_key_doctor = os.getenv('ENCRYPTION_KEY_DOCTOR')
+    if not encryption_key_doctor:
+        messagebox.showerror("Encryption Key Error", "ENCRYPTION_KEY_DOCTOR environment variable not set.")
+        return
+    try:
+        fernet_doctor = Fernet(encryption_key_doctor.encode())
+    except ValueError as e:
+        messagebox.showerror("Encryption Key Error", f"Invalid encryption key: {e}")
+        return
+    try:
+        encrypted_visit_date = fernet_doctor.encrypt(visit_data['visit_date'].encode()).decode()
+        encrypted_diagnosis = fernet_doctor.encrypt(visit_data['diagnosis'].encode()).decode()
+        encrypted_medicine = fernet_doctor.encrypt(visit_data['medicine'].encode()).decode()
+        encrypted_follow_up_date = fernet_doctor.encrypt(visit_data['follow_up_date'].encode()).decode()
+        
+        visit_id = f"visit_{uuid.uuid4()}"
+        visit_doc = {
+            "_id": visit_id,
+            "type": "visit",
+            "patient_id": visit_data['patient_id'],
+            "visit_date": encrypted_visit_date,
+            "diagnosis": encrypted_diagnosis,
+            "medicine": encrypted_medicine,
+            "follow_up_date": encrypted_follow_up_date
+        }
+        
+        db.save(visit_doc)
+        messagebox.showinfo("Success", f"Visit record added successfully with ID '{visit_id}'.")
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to save visit record: {e}")

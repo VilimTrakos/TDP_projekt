@@ -17,6 +17,7 @@ def submit_record(patient_id):
 
     try:
         visit_datetime = datetime.strptime(visit_date, "%d.%m.%Y")
+        visit_date_formatted = visit_datetime.strftime("%Y-%m-%d")
     except ValueError:
         messagebox.showwarning("Invalid Date Format", "Please enter the visit date in dd.mm.yyyy format.")
         return
@@ -26,21 +27,22 @@ def submit_record(patient_id):
         if follow_up_datetime < datetime.now():
             messagebox.showwarning("Invalid Date", "Follow-up date cannot be in the past.")
             return
+        follow_up_date_formatted = follow_up_datetime.strftime("%Y-%m-%d")
     except ValueError:
         messagebox.showwarning("Invalid Date Format", "Please enter the follow-up date in dd.mm.yyyy format.")
         return
 
     new_visit = {
         "patient_id": patient_id,            
-        "visit_date": visit_date,             
+        "visit_date": visit_date_formatted,             
         "diagnosis": diagnosis,
         "medicine": medicine,
-        "follow_up_date": follow_up_date_str
+        "follow_up_date": follow_up_date_formatted
     }
     
     save_visit_record(new_visit)
 
-    messagebox.showinfo("Success", f"New visit record added successfully!\nFollow-up on: {follow_up_date_str}")
+    messagebox.showinfo("Success", f"New visit record added successfully!\nFollow-up on: {follow_up_date_formatted}")
     add_window.destroy()
 
 def on_close():
