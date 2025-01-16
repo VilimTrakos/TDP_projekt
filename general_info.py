@@ -9,28 +9,37 @@ from data_handler import load_patient_doc, load_visit_records
 
 def refresh_visit_tree(patient_id, role):
     visit_tree.delete(*visit_tree.get_children())
-
     visit_data = load_visit_records(patient_id, role)
+
+    valid_visits = []
+    for record in visit_data:
+        if not record.get("visit_date"):
+            record["visit_date"] = "ERROR"
+
+        valid_visits.append(record)
 
     try:
         sorted_visit_data = sorted(
-            visit_data,
+            valid_visits,
             key=lambda x: datetime.strptime(x["visit_date"], "%Y-%m-%d"),
             reverse=True 
         )
-    except KeyError as e:
-        messagebox.showerror("Error", f"Missing field in visit record: {e}")
-        sorted_visit_data = []
-    except ValueError as e:
+    except (KeyError, ValueError) as e:
         messagebox.showerror("Error", f"Invalid date format in visit record: {e}")
-        sorted_visit_data = []
+        sorted_visit_data = valid_visits
 
     for visit_record in sorted_visit_data:
-        visit_tree.insert("", "end", values=(
-            visit_record.get("visit_date", ""), 
-            visit_record.get("diagnosis", ""),
-            visit_record.get("medicine", "")
-        ))
+        if role.lower() == "doctor":
+            visit_tree.insert(
+                "", "end", 
+                values=(
+                    visit_record.get("visit_date", ""), 
+                    visit_record.get("diagnosis", ""),
+                    visit_record.get("medicine", "")
+                )
+            )
+        else:
+            visit_tree.insert("", "end", values=(visit_record.get("visit_date", ""),))
 
 def sort_visit_tree(column):
     if not hasattr(sort_visit_tree, 'sort_states'):
@@ -102,17 +111,17 @@ def open_general_info(patient_id, role):
     app_window.title("Record Details")
 
     patient_doc = load_patient_doc(patient_id, role)
-
-    if patient_doc:
-        name = patient_doc.get("first_name", "")
-        surname = patient_doc.get("last_name", "")
-        dob = patient_doc.get("date_of_birth", "")
-        gender = patient_doc.get("gender", "")
-        contact = patient_doc.get("email", "")
-    else:
+    if not patient_doc:
         messagebox.showerror("Error", "Patient document not found.")
         app_window.destroy()
         return
+
+    name    = patient_doc.get("first_name", "")
+    surname = patient_doc.get("last_name", "")
+    oib     = patient_doc.get("oib", "")
+    dob     = patient_doc.get("date_of_birth", "")
+    gender  = patient_doc.get("gender", "")
+    contact = patient_doc.get("email", "")
 
     general_info_frame = tk.Frame(app_window)
     general_info_frame.pack(side="left", padx=10, pady=10)
@@ -120,7 +129,7 @@ def open_general_info(patient_id, role):
     tk.Label(general_info_frame, text="General Info", font=("Arial", 14, "bold")).pack()
     tk.Label(general_info_frame, text=f"Name: {name}").pack(anchor="w")
     tk.Label(general_info_frame, text=f"Surname: {surname}").pack(anchor="w")
-    tk.Label(general_info_frame, text=f"OIB: {patient_doc.get('oib', '')}").pack(anchor="w")
+    tk.Label(general_info_frame, text=f"OIB: {oib}").pack(anchor="w")
     tk.Label(general_info_frame, text=f"Date of Birth: {dob}").pack(anchor="w")
     tk.Label(general_info_frame, text=f"Gender: {gender}").pack(anchor="w")
     tk.Label(general_info_frame, text=f"Contact: {contact}").pack(anchor="w")
@@ -132,8 +141,6 @@ def open_general_info(patient_id, role):
 
     if role.lower() == 'doctor':
         visit_columns = ("Date", "Diagnosis", "Medicine")
-    elif role.lower() == 'staff':
-        visit_columns = ("Date",)
     else:
         visit_columns = ("Date",)
 
@@ -144,13 +151,12 @@ def open_general_info(patient_id, role):
             visit_tree.heading(col, text=col, command=lambda c=col: sort_visit_tree(c))
         else:
             visit_tree.heading(col, text=col)
-        visit_tree.column(col, minwidth=0, width=100, stretch=True)
+        visit_tree.column(col, minwidth=0, width=120, stretch=True)
 
     visit_tree.pack(pady=5, fill="both", expand=True)
 
     if role.lower() == 'doctor':
         refresh_visit_tree(patient_id, role)
-
         tk.Button(
             visit_frame, 
             text="Add New Record", 
@@ -160,34 +166,38 @@ def open_general_info(patient_id, role):
         tk.Button(
             visit_frame, 
             text="View Record", 
-            command=lambda: view_selected_record(patient_id)
+            command=lambda: view_selected_record(patient_id, role)
         ).pack(pady=5)
     else:
-        tk.Label(
-            visit_frame, 
-            text="Insufficient permissions to add/view visits."
-        ).pack(pady=5)
+        refresh_visit_tree(patient_id, role)
+        tk.Label(visit_frame, text="Insufficient permissions to add/view visits.").pack(pady=5)
 
     app_window.mainloop()
 
-def view_selected_record(patient_id):
+def view_selected_record(patient_id, role):
     selected_item = visit_tree.focus()
     if not selected_item:
         messagebox.showwarning("No Selection", "Please select a visit record to view.")
         return
+
     values = visit_tree.item(selected_item, "values")
-    if len(values) < 1:
+    if len(values) < 3:
         messagebox.showerror("Error", "Selected visit record is incomplete.")
         return
+
     visit_date = values[0]
-    diagnosis = values[1] if len(values) > 1 else ""
-    medicine = values[2] if len(values) > 2 else ""
+    diagnosis  = values[1]
+    medicine   = values[2]
+
     matching_visits = [
-        visit for visit in load_visit_records(patient_id, role)
-        if visit.get("visit_date") == visit_date and
-           (visit.get("diagnosis") == diagnosis if diagnosis else True) and
-           (visit.get("medicine") == medicine if medicine else True)
+        v for v in load_visit_records(patient_id, role)
+        if (
+            v.get("visit_date") == visit_date
+            and v.get("diagnosis") == diagnosis
+            and v.get("medicine") == medicine
+        )
     ]
+
     if matching_visits:
         record = matching_visits[0]
         view_record(patient_id, record)

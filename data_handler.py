@@ -22,19 +22,15 @@ def decrypt_field(encrypted_value, fernet, field_name=""):
     if not encrypted_value:
         return None
     try:
-        decrypted = fernet.decrypt(encrypted_value.encode()).decode()
-        return decrypted
-    except InvalidToken:
-        return None
-    except Exception:
+        return fernet.decrypt(encrypted_value.encode()).decode()
+    except (InvalidToken, Exception):
         return None
 
 def encrypt_field(plaintext, fernet, field_name=""):
     if not plaintext:
         return None
     try:
-        encrypted = fernet.encrypt(plaintext.encode()).decode()
-        return encrypted
+        return fernet.encrypt(plaintext.encode()).decode()
     except Exception:
         return None
 
@@ -71,7 +67,7 @@ def load_data(role, related_id):
             patient_doc = db.get(patient_id)
             if patient_doc and patient_doc.get("type") == "patient":
                 decrypted_first_name = decrypt_field(patient_doc.get("first_name", ""), fernet_shared, "First Name")
-                decrypted_last_name = decrypt_field(patient_doc.get("last_name", ""), fernet_shared, "Last Name")
+                decrypted_last_name  = decrypt_field(patient_doc.get("last_name", ""),  fernet_shared, "Last Name")
                 gender = patient_doc.get("gender", "")
 
                 if role.lower() == 'doctor':
@@ -82,10 +78,10 @@ def load_data(role, related_id):
                             decrypted_oib = "Decryption Failed"
                     decrypted_dob = decrypt_field(patient_doc.get("date_of_birth", ""), fernet_doctor, "Date of Birth")
                     decrypted_email = decrypt_field(patient_doc.get("email", ""), fernet_doctor, "Email")
-
+                    
                 else:
-                    decrypted_oib = "Encrypted"
-                    decrypted_dob = "Encrypted"
+                    decrypted_oib   = "Encrypted"
+                    decrypted_dob   = "Encrypted"
                     decrypted_email = "Encrypted"
 
                 record_tuple = (
@@ -98,11 +94,9 @@ def load_data(role, related_id):
                     decrypted_email
                 )
                 patient_records.append(record_tuple)
-
     except Exception as e:
         messagebox.showerror("Error", f"Failed to load patient data: {e}")
         return []
-
     return patient_records
 
 def load_patient_doc(patient_id, role):
@@ -149,7 +143,7 @@ def load_patient_doc(patient_id, role):
         else:
             decrypted_first_name = decrypt_field(patient_doc.get("first_name", ""), fernet_shared, "First Name")
             decrypted_last_name = decrypt_field(patient_doc.get("last_name", ""), fernet_shared, "Last Name")
-            decrypted_doc = {
+            return {
                 "_id": patient_doc.get("_id"),
                 "first_name": decrypted_first_name,
                 "last_name": decrypted_last_name,
@@ -158,7 +152,6 @@ def load_patient_doc(patient_id, role):
                 "gender": patient_doc.get("gender", ""),
                 "email": "Encrypted"
             }
-            return decrypted_doc
 
     except Exception as e:
         messagebox.showerror("Error", f"Failed to load patient document: {e}")
@@ -178,6 +171,7 @@ def load_visit_records(patient_id, role):
     try:
         fernet_doctor = Fernet(encryption_key_doctor.encode())
         fernet_staff = Fernet(encryption_key_staff.encode())
+        fernet_shared = Fernet(encryption_key_shared.encode())
     except ValueError as e:
         messagebox.showerror("Encryption Key Error", f"Invalid encryption key: {e}")
         return []
@@ -187,20 +181,21 @@ def load_visit_records(patient_id, role):
             doc = db[doc_id]
             if doc.get("type") == "visit" and doc.get("patient_id") == patient_id:
                 if role.lower() == 'doctor':
-                    decrypted_visit_date = decrypt_field(doc.get("visit_date", ""), fernet_doctor, "Visit Date")
+                    decrypted_visit_date = decrypt_field(doc.get("visit_date", ""), fernet_shared, "Visit Date")
                     decrypted_diagnosis = decrypt_field(doc.get("diagnosis", ""), fernet_doctor, "Diagnosis")
                     decrypted_medicine = decrypt_field(doc.get("medicine", ""), fernet_doctor, "Medicine")
                     decrypted_follow_up_date = decrypt_field(doc.get("follow_up_date", ""), fernet_doctor, "Follow-up Date")
                 elif role.lower() == 'staff':
-                    decrypted_visit_date = decrypt_field(doc.get("visit_date", ""), fernet_staff, "Visit Date")
+                    decrypted_visit_date = decrypt_field(doc.get("visit_date", ""), fernet_shared, "Visit Date")
                     decrypted_diagnosis = "Encrypted"
                     decrypted_medicine = "Encrypted"
-                    decrypted_follow_up_date = decrypt_field(doc.get("follow_up_date", ""), fernet_staff, "Follow-up Date")
+                    decrypted_follow_up_date = "Encrypted"
+
                 else:
-                    decrypted_visit_date = decrypt_field(doc.get("visit_date", ""), fernet_staff, "Visit Date")
+                    decrypted_visit_date = decrypt_field(doc.get("visit_date", ""), fernet_shared, "Visit Date")
                     decrypted_diagnosis = "Encrypted"
                     decrypted_medicine = "Encrypted"
-                    decrypted_follow_up_date = decrypt_field(doc.get("follow_up_date", ""), fernet_staff, "Follow-up Date")
+                    decrypted_follow_up_date = "Encrypted"
 
                 visit_record = {
                     "visit_date": decrypted_visit_date,
@@ -219,17 +214,22 @@ def save_visit_record(visit_data):
     if not db:
         return
     encryption_key_doctor = os.getenv('ENCRYPTION_KEY_DOCTOR')
-    if not encryption_key_doctor:
-        messagebox.showerror("Encryption Key Error", "ENCRYPTION_KEY_DOCTOR environment variable not set.")
+    encryption_key_shared = os.getenv('ENCRYPTION_KEY_SHARED')
+    if not encryption_key_doctor or not encryption_key_shared:
+        messagebox.showerror(
+            "Encryption Key Error", 
+            "ENCRYPTION_KEY_DOCTOR and/or ENCRYPTION_KEY_SHARED environment variables not set."
+        )
         return
     try:
         fernet_doctor = Fernet(encryption_key_doctor.encode())
+        fernet_shared = Fernet(encryption_key_shared.encode())
     except ValueError as e:
         messagebox.showerror("Encryption Key Error", f"Invalid encryption key: {e}")
         return
 
     try:
-        encrypted_visit_date = encrypt_field(visit_data['visit_date'], fernet_doctor, "Visit Date")
+        encrypted_visit_date = encrypt_field(visit_data['visit_date'], fernet_shared, "Visit Date")
         encrypted_diagnosis = encrypt_field(visit_data['diagnosis'], fernet_doctor, "Diagnosis")
         encrypted_medicine = encrypt_field(visit_data['medicine'], fernet_doctor, "Medicine")
         encrypted_follow_up_date = encrypt_field(visit_data['follow_up_date'], fernet_doctor, "Follow-up Date")
