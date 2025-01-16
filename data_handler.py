@@ -6,7 +6,7 @@ import uuid
 
 def connect_to_couchdb():
     try:
-        couch = couchdb.Server('http://admin:admin@localhost:5984/')
+        couch = couchdb.Server('http://admin:admin@localhost:5985/')
         db_name = 'medical_records'
         if db_name in couch:
             db = couch[db_name]

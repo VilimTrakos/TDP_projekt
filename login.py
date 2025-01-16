@@ -53,7 +53,7 @@ def check_login():
 
 COUCHDB_USER = 'admin'        
 COUCHDB_PASSWORD = 'admin'    
-COUCHDB_SERVER_URL = f"http://{COUCHDB_USER}:{COUCHDB_PASSWORD}@localhost:5984"
+COUCHDB_SERVER_URL = f"http://{COUCHDB_USER}:{COUCHDB_PASSWORD}@localhost:5985"
 
 try:
     couch = couchdb.Server(COUCHDB_SERVER_URL)
