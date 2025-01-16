@@ -13,7 +13,7 @@ def open_details_window():
     
     record = tree.item(selected_item, "values")
     record_str = ";".join(record)
-    launch_script("general_info.py", record_str)
+    launch_script("general_info.py", record_str, role)
 
 def search_table(event=None):
     query = search_var.get().lower()
@@ -41,14 +41,14 @@ if len(sys.argv) < 5:
     sys.exit(1)
 
 username = sys.argv[1]
-role = sys.argv[2]
+role = sys.argv[2].lower()
 related_id = sys.argv[3]
 region = sys.argv[4]
 
 app_window = tk.Tk()
 app_window.title("Data Viewer")
 
-tk.Label(app_window, text=f"Username: {username} | Role: {role} | Region: {region}").pack(pady=5)
+tk.Label(app_window, text=f"Username: {username} | Role: {role.capitalize()} | Region: {region}").pack(pady=5)
 
 search_var = tk.StringVar()
 tk.Label(app_window, text="Search:").pack(pady=5)

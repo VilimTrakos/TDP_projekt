@@ -8,10 +8,10 @@ import subprocess
 
 from data_handler import load_patient_doc, load_visit_records
 
-def refresh_visit_tree(patient_id):
+def refresh_visit_tree(patient_id, role):
     visit_tree.delete(*visit_tree.get_children())
 
-    visit_data = load_visit_records(patient_id)
+    visit_data = load_visit_records(patient_id, role)
 
     try:
         sorted_visit_data = sorted(
@@ -29,7 +29,7 @@ def refresh_visit_tree(patient_id):
     for visit_record in sorted_visit_data:
         visit_tree.insert("", "end", values=(
             visit_record.get("visit_date", ""), 
-            visit_record.get("diagnosis", ""), 
+            visit_record.get("diagnosis", ""),
             visit_record.get("medicine", "")
         ))
 
@@ -85,7 +85,18 @@ def view_record(patient_id, record):
     close_button = tk.Button(view_window, text="Close", command=view_window.destroy)
     close_button.grid(row=4, column=0, columnspan=2, pady=10)
 
-def open_general_info(record):
+def open_new_record(patient_id):
+    python_executable = sys.executable
+    script_path = os.path.join(os.path.dirname(__file__), "new_record.py")
+    if patient_id:
+        try:
+            subprocess.Popen([python_executable, script_path, patient_id])
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to launch new_record.py: {e}")
+    else:
+        messagebox.showerror("Error", "No valid patient_id to link this new record.")
+
+def open_general_info(record, role):
     global visit_tree, app_window
 
     app_window = tk.Tk()
@@ -93,7 +104,7 @@ def open_general_info(record):
 
     oib_from_tuple = record[2]
 
-    patient_doc = load_patient_doc(oib_from_tuple)
+    patient_doc = load_patient_doc(oib_from_tuple, role)
 
     if patient_doc:
         name = patient_doc.get("first_name", "")
@@ -122,7 +133,13 @@ def open_general_info(record):
 
     tk.Label(visit_frame, text="Visit Records", font=("Arial", 14, "bold")).pack()
 
-    visit_columns = ("Date", "Diagnosis", "Medicine")
+    if role == 'doctor':
+        visit_columns = ("Date", "Diagnosis", "Medicine")
+    elif role == 'staff':
+        visit_columns = ("Date",)
+    else:
+        visit_columns = ("Date",)
+
     visit_tree = ttk.Treeview(visit_frame, columns=visit_columns, show="headings")
 
     for col in visit_columns:
@@ -135,11 +152,9 @@ def open_general_info(record):
     visit_tree.pack(pady=5, fill="both", expand=True)
 
     if patient_id:
-        refresh_visit_tree(patient_id)
-    else:
-        pass
+        refresh_visit_tree(patient_id, role)
 
-    if patient_id:
+    if patient_id and role == 'doctor':
         tk.Button(
             visit_frame, 
             text="Add New Record", 
@@ -154,7 +169,7 @@ def open_general_info(record):
     else:
         tk.Label(
             visit_frame, 
-            text="No valid patient_id found, cannot add or view visits."
+            text="No valid patient_id found or insufficient permissions to add/view visits."
         ).pack(pady=5)
 
     app_window.mainloop()
@@ -166,7 +181,7 @@ def view_selected_record(patient_id):
         return
     values = visit_tree.item(selected_item, "values")
     matching_visits = [
-        visit for visit in load_visit_records(patient_id)
+        visit for visit in load_visit_records(patient_id, role)
         if visit.get("visit_date") == values[0] and
            visit.get("diagnosis") == values[1] and
            visit.get("medicine") == values[2]
@@ -177,24 +192,18 @@ def view_selected_record(patient_id):
     else:
         messagebox.showerror("Error", "Selected visit record not found.")
 
-def open_new_record(patient_id):
-    python_executable = sys.executable
-    script_path = os.path.join(os.path.dirname(__file__), "new_record.py")
-    if patient_id:
-        try:
-            subprocess.Popen([python_executable, script_path, patient_id])
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to launch new_record.py: {e}")
-    else:
-        messagebox.showerror("Error", "No valid patient_id to link this new record.")
-
-if __name__ == "__main__":
-    if len(sys.argv) > 1:
+def main():
+    if len(sys.argv) > 2:
         record_str = sys.argv[1]
+        role = sys.argv[2].lower()
         record = record_str.split(";")
         if len(record) == 6:
-            open_general_info(record)
+            open_general_info(record, role)
         else:
             messagebox.showerror("Error", "Invalid record data provided.")
     else:
-        messagebox.showerror("Error", "No record data provided.")
+        messagebox.showerror("Error", "Record data and role must be provided.")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

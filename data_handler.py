@@ -1,4 +1,3 @@
-# data_handler.py
 import couchdb
 import os
 from cryptography.fernet import Fernet, InvalidToken
@@ -69,7 +68,6 @@ def load_data(role, related_id):
                     )
                     patient_records.append(record_tuple)
         elif role == 'staff':
-            fernet_staff = Fernet(encryption_key_shared.encode())
             for doc_id in db:
                 doc = db[doc_id]
                 if doc.get("type") == "patient":
@@ -161,12 +159,13 @@ def load_visit_records(patient_id, role):
         return []
     encryption_key_doctor = os.getenv('ENCRYPTION_KEY_DOCTOR')
     encryption_key_staff = os.getenv('ENCRYPTION_KEY_STAFF')
-    if not encryption_key_doctor or not encryption_key_staff:
-        messagebox.showerror("Encryption Key Error", "ENCRYPTION_KEY_DOCTOR and/or ENCRYPTION_KEY_STAFF environment variables not set.")
+    encryption_key_shared = os.getenv('ENCRYPTION_KEY_SHARED')
+    if not encryption_key_doctor or not encryption_key_staff or not encryption_key_shared:
+        messagebox.showerror("Encryption Key Error", "ENCRYPTION_KEY_DOCTOR, ENCRYPTION_KEY_STAFF, and/or ENCRYPTION_KEY_SHARED environment variables not set.")
         return []
     try:
         fernet_doctor = Fernet(encryption_key_doctor.encode())
-        fernet_shared = Fernet(encryption_key_shared.encode())
+        fernet_staff = Fernet(encryption_key_staff.encode())
     except ValueError as e:
         messagebox.showerror("Encryption Key Error", f"Invalid encryption key: {e}")
         return []
