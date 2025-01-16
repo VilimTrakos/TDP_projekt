@@ -15,7 +15,6 @@ def refresh_visit_tree(patient_id, role):
     for record in visit_data:
         if not record.get("visit_date"):
             record["visit_date"] = "ERROR"
-
         valid_visits.append(record)
 
     try:
@@ -31,11 +30,12 @@ def refresh_visit_tree(patient_id, role):
     for visit_record in sorted_visit_data:
         if role.lower() == "doctor":
             visit_tree.insert(
-                "", "end", 
+                "", "end",
                 values=(
-                    visit_record.get("visit_date", ""), 
+                    visit_record.get("visit_date", ""),
                     visit_record.get("diagnosis", ""),
-                    visit_record.get("medicine", "")
+                    visit_record.get("medicine", ""),
+                    visit_record.get("follow_up_date", "")
                 )
             )
         else:
@@ -140,7 +140,7 @@ def open_general_info(patient_id, role):
     tk.Label(visit_frame, text="Visit Records", font=("Arial", 14, "bold")).pack()
 
     if role.lower() == 'doctor':
-        visit_columns = ("Date", "Diagnosis", "Medicine")
+        visit_columns = ("Date", "Diagnosis", "Medicine", "Follow-up")
     else:
         visit_columns = ("Date",)
 
