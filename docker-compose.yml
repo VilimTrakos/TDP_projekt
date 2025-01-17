@@ -1,12 +1,92 @@
 version: "3.8"
+
 services:
-  couchdb:
+  couch_a:
     image: couchdb:latest
-    container_name: couchdb
     ports:
       - "5984:5984"
     environment:
       - COUCHDB_USER=admin
-      - COUCHDB_PASSWORD=admin
+      - COUCHDB_PASSWORD=password
+      - NODENAME=couch_a
+      - COUCHDB_SINGLE_NODE=true
     volumes:
-      - ./data:/opt/couchdb/data
+      - couch_a_data:/opt/couchdb/data
+      - ./local.ini:/opt/couchdb/etc/local.d/local.ini
+    networks:
+      couch_network:
+        aliases:
+          - couch_a
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5984"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  couch_b:
+    image: couchdb:latest
+    ports:
+      - "5985:5984"
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=password
+      - NODENAME=couch_b
+      - COUCHDB_SINGLE_NODE=true
+    volumes:
+      - couch_b_data:/opt/couchdb/data
+      - ./local.ini:/opt/couchdb/etc/local.d/local.ini
+    networks:
+      couch_network:
+        aliases:
+          - couch_b
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5984"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  couch_c:
+    image: couchdb:latest
+    ports:
+      - "5986:5984"
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=password
+      - NODENAME=couch_c
+      - COUCHDB_SINGLE_NODE=true
+    volumes:
+      - couch_c_data:/opt/couchdb/data
+      - ./local.ini:/opt/couchdb/etc/local.d/local.ini
+    networks:
+      couch_network:
+        aliases:
+          - couch_c
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5984"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  setup_replication:
+    image: curlimages/curl:latest
+    networks:
+      - couch_network
+    depends_on:
+      couch_a:
+        condition: service_healthy
+      couch_b:
+        condition: service_healthy
+      couch_c:
+        condition: service_healthy
+    volumes:
+      - ./init-replication.sh:/init-replication.sh
+    entrypoint: ["sh", "/init-replication.sh"]
+
+volumes:
+  couch_a_data:
+  couch_b_data:
+  couch_c_data:
+
+networks:
+  couch_network:
+    driver: bridge
