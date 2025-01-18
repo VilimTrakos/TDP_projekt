@@ -5,6 +5,15 @@ import sys
 import requests
 import couchdb
 
+COUCHDB_USER = 'admin'
+COUCHDB_PASSWORD = 'password'
+
+REGION_COUCHDB_MAPPING = {
+    "Zagreb": "5986",   # couch_c
+    "Osijek": "5985",   # couch_b
+    "Varazdin": "5984", # couch_a
+}
+
 def check_login():
     username = username_entry.get().strip()
     password = password_entry.get().strip()
@@ -14,8 +23,31 @@ def check_login():
         messagebox.showerror("Login Error", "Please enter both username and password.")
         return
 
+    couchdb_port = REGION_COUCHDB_MAPPING.get(selected_region)
+    if not couchdb_port:
+        messagebox.showerror("Login Error", f"No CouchDB configuration found for region '{selected_region}'.")
+        return
+
+    couchdb_server_url = f"http://{COUCHDB_USER}:{COUCHDB_PASSWORD}@localhost:{couchdb_port}"
+
     try:
-        auth_url = f"{COUCHDB_SERVER_URL}/_session"
+        couch = couchdb.Server(couchdb_server_url)
+        db_name = 'medical_records'
+        users_db_name = '_users'
+
+        if db_name in couch:
+            db = couch[db_name]
+        else:
+            messagebox.showerror("Error", f"Database '{db_name}' does not exist on the selected CouchDB server.")
+            return
+
+        if users_db_name in couch:
+            users_db = couch[users_db_name]
+        else:
+            messagebox.showerror("Error", f"Database '{users_db_name}' does not exist on the selected CouchDB server.")
+            return
+
+        auth_url = f"{couchdb_server_url}/_session"
         payload = {'name': username, 'password': password}
         response = requests.post(auth_url, data=payload)
 
@@ -51,33 +83,9 @@ def check_login():
     except Exception as e:
         messagebox.showerror("Error", f"An unexpected error occurred: {e}")
 
-COUCHDB_USER = 'admin'        
-COUCHDB_PASSWORD = 'password'    
-COUCHDB_SERVER_URL = f"http://{COUCHDB_USER}:{COUCHDB_PASSWORD}@localhost:5986"
-
-try:
-    couch = couchdb.Server(COUCHDB_SERVER_URL)
-    db_name = 'medical_records'
-    users_db_name = '_users'
-
-    if db_name in couch:
-        db = couch[db_name]
-    else:
-        messagebox.showerror("Error", f"Database '{db_name}' does not exist.")
-        sys.exit(1)
-
-    if users_db_name in couch:
-        users_db = couch[users_db_name]
-    else:
-        messagebox.showerror("Error", f"Database '{users_db_name}' does not exist.")
-        sys.exit(1)
-except Exception as e:
-    messagebox.showerror("Error", f"Failed to connect to CouchDB: {e}")
-    sys.exit(1)
-
 login_window = tk.Tk()
 login_window.title("Login")
-login_window.geometry("300x250")
+login_window.geometry("300x300") 
 
 tk.Label(login_window, text="Username:").pack(pady=5)
 username_entry = tk.Entry(login_window)
@@ -90,10 +98,10 @@ password_entry.pack(pady=5)
 tk.Label(login_window, text="Select region:").pack(pady=5)
 region_var = tk.StringVar(login_window)
 region_var.set("Zagreb")
-regions = ["Zagreb", "Osijek", "Varazdin", "Split"]
+regions = ["Zagreb", "Osijek", "Varazdin"]
 region_menu = tk.OptionMenu(login_window, region_var, *regions)
 region_menu.pack(pady=5)
 
-tk.Button(login_window, text="Login", command=check_login).pack(pady=10)
+tk.Button(login_window, text="Login", command=check_login).pack(pady=20)
 
 login_window.mainloop()
