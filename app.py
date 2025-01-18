@@ -5,6 +5,12 @@ import sys
 import os
 from data_handler import load_data
 
+REGION_COUCHDB_MAPPING = {
+    "Zagreb": 5986,    # couch_c
+    "Osijek": 5985,    # couch_b
+    "Varazdin": 5984,  # couch_a
+}
+
 def open_details_window():
     selected_item = tree.focus()
     if not selected_item:
@@ -13,7 +19,7 @@ def open_details_window():
     
     record = tree.item(selected_item, "values")
     patient_id = record[0]
-    launch_script("general_info.py", patient_id, role)
+    launch_script("general_info.py", patient_id, role, region)
 
 def search_table(event=None):
     query = search_var.get().lower()
@@ -45,6 +51,11 @@ role = sys.argv[2].lower()
 related_id = sys.argv[3]
 region = sys.argv[4]
 
+couchdb_port = REGION_COUCHDB_MAPPING.get(region)
+if not couchdb_port:
+    messagebox.showerror("Error", f"No CouchDB port mapping found for region '{region}'.")
+    sys.exit(1)
+
 app_window = tk.Tk()
 app_window.title("Data Viewer")
 
@@ -68,7 +79,7 @@ for col in columns[1:]:
 
 tree.pack(pady=5, fill="both", expand=True)
 
-data = load_data(role, related_id)
+data = load_data(role, related_id, couchdb_port)
 for record in data:
     tree.insert("", "end", values=record)
 

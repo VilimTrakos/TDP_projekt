@@ -7,9 +7,20 @@ import subprocess
 
 from data_handler import load_patient_doc, load_visit_records
 
+REGION_COUCHDB_MAPPING = {
+    "Zagreb": 5986,    # couch_c
+    "Osijek": 5985,    # couch_b
+    "Varazdin": 5984,  # couch_a
+}
+
+app_window = None
+visit_tree = None
+couchdb_port = None
+
 def refresh_visit_tree(patient_id, role):
     visit_tree.delete(*visit_tree.get_children())
-    visit_data = load_visit_records(patient_id, role)
+
+    visit_data = load_visit_records(patient_id, role, couchdb_port)
 
     valid_visits = []
     for record in visit_data:
@@ -21,7 +32,7 @@ def refresh_visit_tree(patient_id, role):
         sorted_visit_data = sorted(
             valid_visits,
             key=lambda x: datetime.strptime(x["visit_date"], "%Y-%m-%d"),
-            reverse=True 
+            reverse=True
         )
     except (KeyError, ValueError) as e:
         messagebox.showerror("Error", f"Invalid date format in visit record: {e}")
@@ -93,24 +104,31 @@ def view_record(patient_id, record):
     close_button = tk.Button(view_window, text="Close", command=view_window.destroy)
     close_button.grid(row=4, column=0, columnspan=2, pady=10)
 
-def open_new_record(patient_id):
+def open_new_record(patient_id, role, region):
     python_executable = sys.executable
     script_path = os.path.join(os.path.dirname(__file__), "new_record.py")
+
     if patient_id:
         try:
-            subprocess.Popen([python_executable, script_path, patient_id])
+            subprocess.Popen([python_executable, script_path, patient_id, role, region])
         except Exception as e:
             messagebox.showerror("Error", f"Failed to launch new_record.py: {e}")
     else:
         messagebox.showerror("Error", "No valid patient_id to link this new record.")
 
-def open_general_info(patient_id, role):
-    global visit_tree, app_window
+def open_general_info(patient_id, role, region):
+    global visit_tree, app_window, couchdb_port
 
     app_window = tk.Tk()
     app_window.title("Record Details")
 
-    patient_doc = load_patient_doc(patient_id, role)
+    couchdb_port = REGION_COUCHDB_MAPPING.get(region)
+    if couchdb_port is None:
+        messagebox.showerror("Error", f"No CouchDB port mapping found for region '{region}'.")
+        app_window.destroy()
+        return
+    
+    patient_doc = load_patient_doc(patient_id, role, couchdb_port)
     if not patient_doc:
         messagebox.showerror("Error", "Patient document not found.")
         app_window.destroy()
@@ -155,12 +173,13 @@ def open_general_info(patient_id, role):
 
     visit_tree.pack(pady=5, fill="both", expand=True)
 
+    refresh_visit_tree(patient_id, role)
+
     if role.lower() == 'doctor':
-        refresh_visit_tree(patient_id, role)
         tk.Button(
             visit_frame, 
             text="Add New Record", 
-            command=lambda: open_new_record(patient_id)
+            command=lambda: open_new_record(patient_id, role, region)
         ).pack(pady=5)
 
         tk.Button(
@@ -169,7 +188,6 @@ def open_general_info(patient_id, role):
             command=lambda: view_selected_record(patient_id, role)
         ).pack(pady=5)
     else:
-        refresh_visit_tree(patient_id, role)
         tk.Label(visit_frame, text="Insufficient permissions to add/view visits.").pack(pady=5)
 
     app_window.mainloop()
@@ -181,20 +199,23 @@ def view_selected_record(patient_id, role):
         return
 
     values = visit_tree.item(selected_item, "values")
-    if len(values) < 3:
+    if role.lower() == "doctor" and len(values) < 4:
+        messagebox.showerror("Error", "Selected visit record is incomplete.")
+        return
+    if role.lower() != "doctor" and len(values) < 1:
         messagebox.showerror("Error", "Selected visit record is incomplete.")
         return
 
     visit_date = values[0]
-    diagnosis  = values[1]
-    medicine   = values[2]
+    diagnosis  = values[1] if role.lower() == "doctor" else ""
+    medicine   = values[2] if role.lower() == "doctor" else ""
 
     matching_visits = [
-        v for v in load_visit_records(patient_id, role)
+        v for v in load_visit_records(patient_id, role, couchdb_port)
         if (
             v.get("visit_date") == visit_date
-            and v.get("diagnosis") == diagnosis
-            and v.get("medicine") == medicine
+            and (role.lower() != "doctor" or v.get("diagnosis") == diagnosis)
+            and (role.lower() != "doctor" or v.get("medicine") == medicine)
         )
     ]
 
@@ -205,13 +226,15 @@ def view_selected_record(patient_id, role):
         messagebox.showerror("Error", "Selected visit record not found.")
 
 def main():
-    if len(sys.argv) > 2:
-        patient_id = sys.argv[1]
-        role = sys.argv[2].lower()
-        open_general_info(patient_id, role)
-    else:
-        messagebox.showerror("Error", "Patient ID and role must be provided.")
+    if len(sys.argv) < 4:
+        messagebox.showerror("Error", "Patient ID, role, and region must be provided.")
         sys.exit(1)
+
+    patient_id = sys.argv[1]
+    role = sys.argv[2].lower()
+    region = sys.argv[3]
+
+    open_general_info(patient_id, role, region)
 
 if __name__ == "__main__":
     main()

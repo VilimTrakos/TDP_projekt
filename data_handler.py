@@ -4,18 +4,18 @@ from cryptography.fernet import Fernet, InvalidToken
 from tkinter import messagebox
 import uuid
 
-def connect_to_couchdb():
+def connect_to_couchdb(port):
     try:
-        couch = couchdb.Server('http://admin:password@localhost:5985/')
+        couch = couchdb.Server(f'http://admin:password@localhost:{port}/')
         db_name = 'medical_records'
         if db_name in couch:
             db = couch[db_name]
             return db
         else:
-            messagebox.showerror("Error", f"Database '{db_name}' does not exist.")
+            messagebox.showerror("Error", f"Database '{db_name}' does not exist on port {port}.")
             return None
     except Exception as e:
-        messagebox.showerror("Error", f"Failed to connect to CouchDB: {e}")
+        messagebox.showerror("Error", f"Failed to connect to CouchDB on port {port}: {e}")
         return None
 
 def decrypt_field(encrypted_value, fernet, field_name=""):
@@ -34,8 +34,8 @@ def encrypt_field(plaintext, fernet, field_name=""):
     except Exception:
         return None
 
-def load_data(role, related_id):
-    db = connect_to_couchdb()
+def load_data(role, related_id, port):
+    db = connect_to_couchdb(port)
     if not db:
         return []
 
@@ -99,8 +99,8 @@ def load_data(role, related_id):
         return []
     return patient_records
 
-def load_patient_doc(patient_id, role):
-    db = connect_to_couchdb()
+def load_patient_doc(patient_id, role, port):
+    db = connect_to_couchdb(port)
     if not db:
         return None
     encryption_key_doctor = os.getenv('ENCRYPTION_KEY_DOCTOR')
@@ -157,8 +157,8 @@ def load_patient_doc(patient_id, role):
         messagebox.showerror("Error", f"Failed to load patient document: {e}")
         return None
 
-def load_visit_records(patient_id, role):
-    db = connect_to_couchdb()
+def load_visit_records(patient_id, role, port):
+    db = connect_to_couchdb(port)
     if not db:
         return []
     encryption_key_doctor = os.getenv('ENCRYPTION_KEY_DOCTOR')
@@ -209,8 +209,8 @@ def load_visit_records(patient_id, role):
         return []
     return visit_records
 
-def save_visit_record(visit_data):
-    db = connect_to_couchdb()
+def save_visit_record(visit_data, port):
+    db = connect_to_couchdb(port)
     if not db:
         return
     encryption_key_doctor = os.getenv('ENCRYPTION_KEY_DOCTOR')
