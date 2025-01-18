@@ -52,8 +52,8 @@ def check_login():
         messagebox.showerror("Error", f"An unexpected error occurred: {e}")
 
 COUCHDB_USER = 'admin'        
-COUCHDB_PASSWORD = 'admin'    
-COUCHDB_SERVER_URL = f"http://{COUCHDB_USER}:{COUCHDB_PASSWORD}@localhost:5985"
+COUCHDB_PASSWORD = 'password'    
+COUCHDB_SERVER_URL = f"http://{COUCHDB_USER}:{COUCHDB_PASSWORD}@localhost:5986"
 
 try:
     couch = couchdb.Server(COUCHDB_SERVER_URL)
