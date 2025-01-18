@@ -58,7 +58,3 @@ python add_patient.py --terminal --first_name "Emily" --last_name "Martin" --oib
    python .\login.py
    ```
 2. Prijavite se pomoću podataka kreiranog korisnika i odaberite bazu na koju se želite povezati.
-
----
-
-Slijedeći ove korake, uspješno ćete postaviti baze podataka, dodati pacijente i korisnike te pokrenuti aplikaciju za prijavu. Ako naiđete na poteškoće, provjerite je li svaki korak ispravno izveden.
