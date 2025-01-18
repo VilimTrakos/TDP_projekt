@@ -3,6 +3,17 @@
 ## Priprema
 Prije svega, potrebno je imati instaliran **Docker Desktop**.
 
+## Potrebne Biblioteke
+
+Prije pokretanja projekta, instalirajte potrebne biblioteke koristeći sljedeće naredbe:
+```bash
+pip install couchdb
+pip install cryptography
+pip install requests
+pip install tkcalendar
+pip install tk
+```
+
 ## Pokretanje Baze Podataka i Testiranje
 
 1. Otvorite terminal u **Visual Studio Code-u** ili običan terminal.
@@ -13,7 +24,7 @@ Prije svega, potrebno je imati instaliran **Docker Desktop**.
    ```
    Ova naredba pokreće postavljanje baza podataka.
 4. Pričekajte 30-40 sekundi da se baze podataka postave i uspostavi njihova replikacija.
-5. Test replikacije izvršit će se pomoću skripte:
+5. Test replikacije izvršit će se automatski pomoću skripte:
    ```bash
    ./init-replication.sh
    ```
@@ -58,3 +69,7 @@ python add_patient.py --terminal --first_name "Emily" --last_name "Martin" --oib
    python .\login.py
    ```
 2. Prijavite se pomoću podataka kreiranog korisnika i odaberite bazu na koju se želite povezati.
+
+---
+
+Slijedeći ove korake, uspješno ćete postaviti baze podataka, dodati pacijente i korisnike te pokrenuti aplikaciju za prijavu. Ako naiđete na poteškoće, provjerite je li svaki korak ispravno izveden.
