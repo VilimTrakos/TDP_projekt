@@ -70,3 +70,25 @@ python add_patient.py --terminal --first_name "Emily" --last_name "Martin" --oib
    ```
 2. Prijavite se pomoću podataka kreiranog korisnika i odaberite bazu na koju se želite povezati.
 
+# Za Windows korisnike!
+
+U slučaju da koristite Windows i Docker, postoji velika mogućnost da je Windows automatski dodao `\r` (carriage return) znak u `init-replication.sh` datoteku te pokretanje te skripte u Docker engineu neće raditi kako treba. 
+
+Provjerite to pomoću naredbe:
+```bash
+cat -A init-replication.sh | grep '\^M'
+```
+Ako vidite nešto poput ovog (obratite pozornost na \^M):
+```bash
+curl -s -X PUT \^M$
+    http://admin:password@couch_c:5984/medical_records/test_doc \^M$
+    -H "Content-Type: application/json" \^M$
+    -d '{"test": "replication test", "timestamp": "datum i vrijeme"}'^M$
+^M$
+```
+Iskoristite sljedeću naredbu za automatsko uklanjanje \^M iz datoteke:
+```bash
+sed -i 's/\r//g' init-replication.sh
+```
+Nakon toga spremite datoteku te ponovno preko terminala pokrenite Docker.
+
