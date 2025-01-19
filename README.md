@@ -76,9 +76,9 @@ U slučaju da koristite Windows i Docker, postoji velika mogućnost da je Window
 
 Provjerite to pomoću naredbe:
 ```bash
-cat -A init-replication.sh | grep '\^M'
+cat -A init-replication.sh | grep '^M'
 ```
-Ako vidite nešto poput ovog (obratite pozornost na \^M):
+Ako vidite nešto poput ovog (obratite pozornost na ^M):
 ```bash
 curl -s -X PUT \^M$
     http://admin:password@couch_c:5984/medical_records/test_doc \^M$
@@ -86,7 +86,7 @@ curl -s -X PUT \^M$
     -d '{"test": "replication test", "timestamp": "datum i vrijeme"}'^M$
 ^M$
 ```
-Iskoristite sljedeću naredbu za automatsko uklanjanje \^M iz datoteke:
+Iskoristite sljedeću naredbu za automatsko uklanjanje ^M iz datoteke:
 ```bash
 sed -i 's/\r//g' init-replication.sh
 ```
